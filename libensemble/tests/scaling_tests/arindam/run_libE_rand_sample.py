@@ -8,6 +8,7 @@
 # as one MPI rank for the manager and one MPI rank for the persistent gen_f.
 # """
 
+import os
 import numpy as np
 from arindam_simf import run_covid  # Sim func from current dir
 
@@ -25,6 +26,10 @@ nworkers, is_master, libE_specs, _ = parse_args()
 
 # Set to full path of executable
 sim_app = './sim_f'
+
+# Creates a dummy directory where each evaluation is performed (for example, if file system
+# I/O is needed for calculating a quantity of interest.) See libE_specs['sim_input_dir']
+os.makedirs('./sim', exist_ok=True)
 
 n = 2  # Problem dimension
 exctr = MPIExecutor(central_mode=True)
