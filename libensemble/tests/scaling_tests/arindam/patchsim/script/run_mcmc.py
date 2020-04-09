@@ -229,16 +229,12 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
 
     return pout
 
-def main(gt_datapath, state, patch_input_datadir, nsamp, gen_specs, libE_info):
+def main(d, gen_specs, libE_info):
 
-    gt_va = get_state_gt(gt_datapath, state)
-    configs, patch_df, params, seeds, Theta, vaxs = setupModel(patch_input_datadir)
-    cov_mat_dict = get_cov(gt_va)
+    pout = run_mcmc(d.configs, d.patch_df, d.params, d.seeds, d.Theta, d.vaxs, d.gt_va,
+                    d.cov_mat_dict, d.nsamp, gen_specs, libE_info)
 
-    pout = run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
-            cov_mat_dict, nsamp, gen_specs, libE_info)
-
-    #print(pout)
+    # print(pout)
     return pout
 
 # gt_datapath = "us-counties.csv"
