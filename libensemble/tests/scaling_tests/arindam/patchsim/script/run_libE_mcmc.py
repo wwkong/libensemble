@@ -18,7 +18,7 @@ assert nworkers >= 2, "Cannot run with a persistent worker if only one worker"
 # Initialize values
 gt_datapath = "../input/us-counties.csv"
 state = 'Virginia'
-patch_input_datadir = "/home/jlarson/research/libensemble/libensemble/tests/scaling_tests/arindam/patchsim/input/"
+patch_input_datadir = "../input/"
 
 gt_va = get_state_gt(gt_datapath, state)
 configs, patch_df, params, seeds, Theta, vaxs = setupModel(patch_input_datadir)
@@ -36,16 +36,16 @@ user_dict = {'configs': configs,
              'gt_FIPS': gt_FIPS}
 
 # State the objective function, its arguments, output, and necessary parameters (and their sizes)
-sim_specs = {'sim_f': sim_f,           # Function whose output is being minimized
+sim_specs = {'sim_f': sim_f,           # Function whose output is being given back to the gen
              'in': ['alpha', 'beta', 'gamma'],  # Name of input for sim_f
-             'out': [('f', float)],          # Objective to be minimized
+             'out': [('f', float)],          # Value returned from sim_f to gen_f
              'user': user_dict,
              }
 
 # State the generating function, its arguments, output, and necessary parameters.
 gen_specs = {'gen_f': gen_f,                 # Generator function
              'in': [],                       # Generator input
-             'out': [('alpha', float), ('beta', float, (133, 190)), ('gamma', float)],  # input parameters to sim
+             'out': [('alpha', float), ('beta', float, (len(patch_df), params['T'])), ('gamma', float)],  # input parameters to sim
              'user': user_dict,
              }
 gen_specs['user']['nsamp'] = 10
