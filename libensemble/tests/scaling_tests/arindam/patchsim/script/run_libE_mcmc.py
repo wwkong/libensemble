@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Execute via 
+# Execute via
 #    mpiexec -np 3 python3 run_libE_mcmc.py
 import numpy as np
 
@@ -13,9 +13,7 @@ from libensemble.tools import parse_args, save_libE_output, add_unique_random_st
 from run_mcmc import get_state_gt, setupModel, get_cov
 nworkers, is_master, libE_specs, _ = parse_args()
 
-
-if nworkers < 2:
-    sys.exit("Cannot run with a persistent worker if only one worker -- aborting...")
+assert nworkers >= 2, "Cannot run with a persistent worker if only one worker"
 
 # Initialize values
 gt_datapath = "../input/us-counties.csv"
@@ -32,20 +30,20 @@ sim_specs = {'sim_f': sim_f,           # Function whose output is being minimize
              'in': ['alpha', 'beta', 'gamma'],  # Name of input for sim_f
              'out': [('f', float)],          # Objective to be minimized
              'user': {'configs': configs,
-                      'patch_df': patch_df, 
-                      'Theta': Theta,   
+                      'patch_df': patch_df,
+                      'Theta': Theta,
                       'params': params,  # Will be partially overwritten in sim_f
-                      'seeds': seeds,   
-                      'vaxs': vaxs, 
-                      'gt_va': gt_va,   
-                      'cov_mat_dict': cov_mat_dict, 
+                      'seeds': seeds,
+                      'vaxs': vaxs,
+                      'gt_va': gt_va,
+                      'cov_mat_dict': cov_mat_dict,
                       'gt_FIPS': gt_FIPS}
              }
 
 # State the generating function, its arguments, output, and necessary parameters.
 gen_specs = {'gen_f': gen_f,                 # Generator function
              'in': [],                       # Generator input
-             'out': [('alpha', float), ('beta', float, (133,190)), ('gamma', float)],       # nb of parameters to input into sim
+             'out': [('alpha', float), ('beta', float, (133, 190)), ('gamma', float)],  # input parameters to sim
              'user': {'gt_datapath': gt_datapath,
                       'state': state,
                       'patch_input_datadir': patch_input_datadir,
@@ -58,7 +56,7 @@ alloc_specs = {'alloc_f': alloc_f, 'out': [('given_back', bool)], 'user': {}}
 # Create a different random number stream for each worker and the manager
 persis_info = add_unique_random_streams({}, nworkers + 1)
 
-exit_criteria = {'elapsed_wallclock_time': 10000} # Just setting a large time, as the gen_f will stop producing points when it's done
+exit_criteria = {'elapsed_wallclock_time': 1e4}  # Setting a large time, as gen_f stops producing points when done
 
 # Perform the run
 H, persis_info, flag = libE(sim_specs, gen_specs, exit_criteria, persis_info,
