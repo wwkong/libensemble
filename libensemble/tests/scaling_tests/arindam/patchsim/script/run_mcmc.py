@@ -167,7 +167,17 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
     params['gamma'] = pout['gamma'][0]
 
     #loglik_0 = pool.map(partial(get_LL, configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict), random_seeds)
-    loglik_0 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+    # Replacing the direct objective call...
+    # loglik_0 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+    # ... with a request to the libensemble manager
+    H0 = np.zeros(1, dtype=gen_specs['out'])
+    H0[0]['alpha'] = params['alpha']
+    H0[0]['beta'] = params['beta']
+    H0[0]['gamma'] = params['gamma']
+    tag, Work, calc_in = sendrecv_mgr_worker_msg(libE_info['comm'], H0)
+    assert tag not in [STOP_TAG, PERSIS_STOP], "We didn't even start yet"
+    loglik_0 = calc_in['f']
+
     for _iter in range(1, nsamp):
 
         ## update gamma
@@ -179,7 +189,18 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
         #loglik_1 = pool.map(partial(get_LL, configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict), random_seeds)
         #acc_prob = np.mean(np.array(loglik_1) - np.array(loglik_0))
 
-        loglik_1 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+        # Replacing the direct objective call...
+        # loglik_1 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+        # ... with a request to the libensemble manager
+        H0 = np.zeros(1, dtype=gen_specs['out'])
+        H0[0]['alpha'] = params['alpha']
+        H0[0]['beta'] = params['beta']
+        H0[0]['gamma'] = params['gamma']
+        tag, Work, calc_in = sendrecv_mgr_worker_msg(libE_info['comm'], H0)
+        if tag in [STOP_TAG, PERSIS_STOP]:
+            break
+        loglik_1 = calc_in['f']
+
         acc_prob = loglik_1 - loglik_0
 
         if (np.random.uniform() < np.exp(acc_prob)):
@@ -211,6 +232,7 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
         tag, Work, calc_in = sendrecv_mgr_worker_msg(libE_info['comm'], H0)
         if tag in [STOP_TAG, PERSIS_STOP]:
             break
+        loglik_1 = calc_in['f']
 
         acc_prob = loglik_1 - loglik_0
 
