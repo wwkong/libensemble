@@ -10,6 +10,9 @@ import matplotlib.dates as mdates
 import scipy.stats as st
 from functools import partial
 
+from libensemble.tools.gen_support import sendrecv_mgr_worker_msg
+from libensemble.message_numbers import STOP_TAG, PERSIS_STOP
+
 def get_state_gt(datapath, state):
     gt_df = pd.read_csv(datapath, dtype={'fips':str}, parse_dates=['date'])
     gt_df = gt_df[gt_df.state==state][['date','fips','cases']]
@@ -143,7 +146,7 @@ def setupModel(patch_input_datadir):
 
 
 def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
-        cov_mat_dict, nsamp=1000):
+        cov_mat_dict, nsamp, gen_specs, libE_info):
 
     gt_FIPS = np.array(gt_va.columns)
 
@@ -196,7 +199,18 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
         #loglik_1 = pool.map(partial(get_LL, configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict), random_seeds)
         #acc_prob = np.mean(np.array(loglik_1) - np.array(loglik_0))
 
-        loglik_1 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+        # Replacing the direct objective call...
+        # loglik_1 = get_LL(configs, patch_df, params, Theta, seeds, vaxs, gt_va, cov_mat_dict,  gt_FIPS)
+        # ... with a request to the libensemble manager
+        # Receive values from manager
+        H0 = np.zeros(1, dtype=gen_specs['out'])
+        H0[0]['alpha'] = params['alpha']
+        H0[0]['beta'] = params['beta']
+        H0[0]['gamma'] = params['gamma']
+        tag, Work, calc_in = sendrecv_mgr_worker_msg(libE_info['comm'], H0)
+        if tag in [STOP_TAG, PERSIS_STOP]:
+            break
+
         acc_prob = loglik_1 - loglik_0
 
         if (np.random.uniform() < np.exp(acc_prob)):
@@ -214,21 +228,21 @@ def run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
 
     return pout
 
-def main(gt_datapath, state, patch_input_datadir, nsamp):
+def main(gt_datapath, state, patch_input_datadir, nsamp, gen_specs, libE_info):
 
     gt_va = get_state_gt(gt_datapath, state)
     configs, patch_df, params, seeds, Theta, vaxs = setupModel(patch_input_datadir)
     cov_mat_dict = get_cov(gt_va)
 
     pout = run_mcmc(configs, patch_df, params, seeds, Theta, vaxs, gt_va,
-            cov_mat_dict, nsamp)
+            cov_mat_dict, nsamp, gen_specs, libE_info)
 
     #print(pout)
     return pout
 
-gt_datapath = "/home/fadikar/work/projects/git/covid-19-data/us-counties.csv"
-state = "Virginia"
-patch_input_datadir = "/home/fadikar/work/projects/git/libensemble/libensemble/tests/scaling_tests/arindam/patchsim/input/"
-nsamp = 10
+# gt_datapath = "us-counties.csv"
+# state = "Virginia"
+# patch_input_datadir = "/home/jlarson/research/libensemble/libensemble/tests/scaling_tests/arindam/patchsim/input/"
+# nsamp = 10
 
-main(gt_datapath, state, patch_input_datadir, nsamp)
+# main(gt_datapath, state, patch_input_datadir, nsamp)
