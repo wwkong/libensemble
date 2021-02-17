@@ -9,6 +9,7 @@ import glob
 import logging
 import socket
 import numpy as np
+import time
 
 from libensemble.utils.timer import Timer
 from libensemble.message_numbers import \
@@ -70,6 +71,13 @@ def manager_main(hist, libE_specs, alloc_specs,
     wcomms: :obj:`list`, optional
         A list of comm type objects for each worker. Default is an empty list.
     """
+
+    manager_main.talloc = 0.0
+    manager_main.talloc_outer = 0.0
+    manager_main.trecv = 0.0
+    manager_main.tother = 0.0
+
+
     if libE_specs.get('profile'):
         pr = cProfile.Profile()
         pr.enable()
@@ -87,6 +95,25 @@ def manager_main(hist, libE_specs, alloc_specs,
     mgr = Manager(hist, libE_specs, alloc_specs,
                   sim_specs, gen_specs, exit_criteria, wcomms)
     result = mgr.run(persis_info)
+
+    #print('alloc time:', manager_main.talloc)
+    #print('talloc_outer time:', manager_main.talloc_outer)
+    #print('trecv time:', manager_main.trecv)
+    #print('tother time:', manager_main.tother)
+
+    combined_time = manager_main.talloc_outer + manager_main.trecv + manager_main.tother
+
+    #import pdb;pdb.set_trace()
+
+    with open('timing.out', "w") as f:
+       #f.write('\nalloc func: {:.2f}'.format(manager_main.talloc))
+       f.write('alloc with checks: {:.2f} (alloc func: {:.2f})'
+               .format(manager_main.talloc_outer,manager_main.talloc))
+       f.write('\nRecv from workers: {:.2f}'.format(manager_main.trecv))
+       f.write('\nSend/update state: {:.2f}'.format(manager_main.tother))
+       f.write('\n-----\nCombined Time: {:.2f}\n\n'.format(combined_time))
+       f.flush()
+
 
     if libE_specs.get('profile'):
         pr.disable()
@@ -432,7 +459,11 @@ class Manager:
                 saveH = copy.deepcopy(H[protected_libE_fields])
 
         alloc_f = self.alloc_specs['alloc_f']
+        talloc1 = time.time()
         output = alloc_f(self.W, H, self.sim_specs, self.gen_specs, self.alloc_specs, persis_info)
+        talloc2 = time.time()
+        manager_main.talloc += talloc2 - talloc1
+        #print('Time so far', manager_main.talloc)
 
         if self.safe_mode:
             assert np.array_equal(saveH, H[protected_libE_fields]), "The allocation function modified protected fields"
@@ -452,22 +483,29 @@ class Manager:
         logger.info("Manager initiated on node {}".format(socket.gethostname()))
         logger.info("Manager exit_criteria: {}".format(self.exit_criteria))
 
+
         # Continue receiving and giving until termination test is satisfied
         try:
             while not self.term_test():
+                trecv1 = time.time()
                 persis_info = self._receive_from_workers(persis_info)
+                manager_main.trecv += time.time() - trecv1
                 if any(self.W['active'] == 0):
+                    talloc_outer1 = time.time()
                     Work, persis_info, flag = self._alloc_work(self.hist.trim_H(),
                                                                persis_info)
+                    manager_main.talloc_outer += time.time() - talloc_outer1
                     if flag:
                         break
 
+                    tother1 = time.time()
                     for w in Work:
                         if self.term_test():
                             break
                         self._check_work_order(Work[w], w)
                         self._send_work_order(Work[w], w)
                         self._update_state_on_alloc(Work[w], w)
+                    manager_main.tother += time.time() - tother1
                 assert self.term_test() or any(self.W['active'] != 0), \
                     "alloc_f did not return any work, although all workers are idle."
 
