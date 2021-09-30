@@ -190,6 +190,7 @@ def only_persistent_workers(W, H, sim_specs, gen_specs, alloc_specs, persis_info
         sim_ids_to_send = support.points_by_priority(H, points_avail=points_to_evaluate, batch=batch_give)
 
         # Stop all persistent sims periodically.
+        #SH Note here that it could be non-persistent in theory - may want to check is persistent if do this.
         if np.sum(H['returned']) >= persis_info.get('last_stop', 0) + user.get('stop_frequency', np.inf):
             persis_info['last_stop'] = np.sum(H['returned'])
             Work[wid] = support.stop_persis_worker(wid, sim_specs['in'], sim_ids_to_send,
