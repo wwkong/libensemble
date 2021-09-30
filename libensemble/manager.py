@@ -355,6 +355,7 @@ class Manager:
                 assert 'active_recv' not in Work['libE_info'], \
                     "active_recv worker must also be persistent"
 
+        #SH STOP with data does not work because need correct tag here.
         work_rows = Work['libE_info']['H_rows']
         if Work['tag'] == EVAL_SIM_TAG:
             self.hist.update_history_x_out(work_rows, w)
