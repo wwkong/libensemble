@@ -31,7 +31,7 @@ sim_specs = {
 
 gen_specs = {
     'gen_f': gen_f,
-    'out': [('BLOCK_SIZE', int)],
+    'out': [('BLOCK_SIZE', int, (1,) )],
     'user': {
         'gen_batch_size': 10,
         'lb': np.array([1]),

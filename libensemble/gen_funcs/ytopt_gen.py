@@ -3,11 +3,7 @@ This module wraps around the ytopt generator.
 """
 import numpy as np
 
-__all__ = ['uniform_random_sample',
-           'uniform_random_sample_with_variable_resources',
-           'uniform_random_sample_obj_components',
-           'latin_hypercube_sample',
-           'uniform_random_sample_cancel']
+__all__ = ['latin_hypercube_sample']
 
 
 def latin_hypercube_sample(H, persis_info, gen_specs, _):
@@ -22,8 +18,8 @@ def latin_hypercube_sample(H, persis_info, gen_specs, _):
 
     A = lhs_sample(n, b, persis_info['rand_stream'])
 
-    # H_o['BLOCK_SIZE'] = np.ceil(A*(ub-lb)+lb)
-    H_o['BLOCK_SIZE'] = np.arange(1,11)
+    H_o['BLOCK_SIZE'] = np.ceil(A*(ub-lb)+lb)
+    # H_o['BLOCK_SIZE'] = np.arange(1, 11)
 
     return H_o, persis_info
 
@@ -31,7 +27,7 @@ def latin_hypercube_sample(H, persis_info, gen_specs, _):
 def lhs_sample(n, k, stream):
 
     # Generate the intervals and random values
-    intervals = np.linspace(0, 1, k+1)
+    intervals = np.linspace(0, 1, k + 1)
     rand_source = stream.uniform(0, 1, (k, n))
     rand_pts = np.zeros((k, n))
     sample = np.zeros((k, n))
@@ -40,7 +36,7 @@ def lhs_sample(n, k, stream):
     a = intervals[:k]
     b = intervals[1:]
     for j in range(n):
-        rand_pts[:, j] = rand_source[:, j]*(b-a) + a
+        rand_pts[:, j] = rand_source[:, j] * (b - a) + a
 
     # Randomly perturb
     for j in range(n):
