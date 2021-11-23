@@ -6,7 +6,7 @@
 
 int main(int argc, const char** argv)
 {
-  sleep(1);
+  sleep(0);
   int n = BLOCK_SIZE * (N/BLOCK_SIZE);
   int a[N][N];
   int b[N][N];
