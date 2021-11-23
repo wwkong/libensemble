@@ -18,7 +18,8 @@ import numpy as np
 # Import libEnsemble items for this test
 from libensemble.libE import libE
 from libensemble.sim_funcs.ytopt_obj import one_d_example as sim_f
-from libensemble.gen_funcs.ytopt_gen import latin_hypercube_sample as gen_f
+from libensemble.gen_funcs.ytopt_gen import persistent_ytopt as gen_f
+from libensemble.alloc_funcs.start_only_persistent import only_persistent_gens as alloc_f
 from libensemble.tools import parse_args, save_libE_output, add_unique_random_streams
 
 nworkers, is_manager, libE_specs, _ = parse_args()
@@ -39,12 +40,14 @@ gen_specs = {
     },
 }
 
+alloc_specs = {'alloc_f': alloc_f}
+
 persis_info = add_unique_random_streams({}, nworkers + 1, seed=1234)
 
 exit_criteria = {'sim_max': 10}
 
 # Perform the run
-H, persis_info, flag = libE(sim_specs, gen_specs, exit_criteria, persis_info, libE_specs=libE_specs)
+H, persis_info, flag = libE(sim_specs, gen_specs, exit_criteria, persis_info, alloc_specs, libE_specs=libE_specs)
 
 if is_manager:
     assert len(H) == exit_criteria['sim_max']

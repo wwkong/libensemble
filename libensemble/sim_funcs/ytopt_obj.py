@@ -14,8 +14,8 @@ import numpy as np
 from plopper import Plopper
 
 
-def one_d_example(x, persis_info, sim_specs, _):
-    y = myobj({'BLOCK_SIZE': np.squeeze(x['BLOCK_SIZE'])})  # ytopt objective wants a dict
+def one_d_example(x, persis_info, sim_specs, libE_info):
+    y = myobj({'BLOCK_SIZE': np.squeeze(x['BLOCK_SIZE'])}, libE_info['workerID'])  # ytopt objective wants a dict
     H_o = np.zeros(1, dtype=sim_specs['out'])
     H_o['f'] = y
 
@@ -25,10 +25,10 @@ def one_d_example(x, persis_info, sim_specs, _):
 obj = Plopper('./mmm_block.cpp', './')
 
 
-def myobj(point: dict):
+def myobj(point: dict, workerID):
     def plopper_func(value):
         params = ['BLOCK_SIZE']
-        result = obj.findRuntime(value, params)
+        result = obj.findRuntime(value, params, workerID)
         return result
 
     x = np.array([point['BLOCK_SIZE']])
