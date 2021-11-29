@@ -42,7 +42,11 @@ p0 = CSH.UniformIntegerHyperparameter(name='BLOCK_SIZE', lower=1, upper=10, defa
 cs.add_hyperparameters([p0])
 input_space = cs
 ytoptimizer = Optimizer(
-    num_workers=num_sim_workers, space=input_space, learner='RF', liar_strategy='cl_max', acq_func='gp_hedge'
+    num_workers=num_sim_workers,
+    space=input_space,
+    learner='RF',
+    liar_strategy='cl_max',
+    acq_func='gp_hedge',
 )
 
 # Declare the gen_f that will generator points for the sim_f, and the various input/outputs
@@ -56,7 +60,10 @@ gen_specs = {
     },
 }
 
-alloc_specs = {'alloc_f': alloc_f, 'user': {'async_return': True}}
+alloc_specs = {
+    'alloc_f': alloc_f,
+    'user': {'async_return': True},
+}
 
 persis_info = add_unique_random_streams({}, nworkers + 1, seed=1234)
 
