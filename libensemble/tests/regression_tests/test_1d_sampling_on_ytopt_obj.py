@@ -25,11 +25,9 @@ from libensemble.tools import parse_args, save_libE_output, add_unique_random_st
 import ConfigSpace as CS
 import ConfigSpace.hyperparameters as CSH
 from ytopt.search.optimizer import Optimizer
-from ytopt.search import Search
-from ytopt.search import util
 
 nworkers, is_manager, libE_specs, _ = parse_args()
-num_sim_workers = nworkers - 1 # Subtracting one because one worker will be the generator
+num_sim_workers = nworkers - 1  # Subtracting one because one worker will be the generator
 
 sim_specs = {
     'sim_f': sim_f,
@@ -39,22 +37,22 @@ sim_specs = {
 
 
 cs = CS.ConfigurationSpace(seed=1234)
-p0= CSH.UniformIntegerHyperparameter(name='BLOCK_SIZE', lower=1, upper=10, default_value=5)
+p0 = CSH.UniformIntegerHyperparameter(name='BLOCK_SIZE', lower=1, upper=10, default_value=5)
 cs.add_hyperparameters([p0])
 input_space = cs
 
 ytoptimizer = Optimizer(
-    num_workers=num_sim_workers, 
-    space=input_space,
-    learner='RF', liar_strategy='cl_max', acq_func='gp_hedge')
+    num_workers=num_sim_workers, space=input_space, learner='RF', liar_strategy='cl_max', acq_func='gp_hedge'
+)
 
 gen_specs = {
     'gen_f': gen_f,
     'out': [('BLOCK_SIZE', int, (1,))],
     'persis_in': ['RUN_TIME', 'BLOCK_SIZE'],
-    'user': {'ytoptimizer': ytoptimizer,
-             'num_sim_workers': num_sim_workers,
-        },
+    'user': {
+        'ytoptimizer': ytoptimizer,
+        'num_sim_workers': num_sim_workers,
+    },
 }
 
 alloc_specs = {'alloc_f': alloc_f}
