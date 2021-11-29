@@ -22,23 +22,39 @@ from libensemble.gen_funcs.ytopt_gen import persistent_ytopt as gen_f
 from libensemble.alloc_funcs.start_only_persistent import only_persistent_gens as alloc_f
 from libensemble.tools import parse_args, save_libE_output, add_unique_random_streams
 
+import ConfigSpace as CS
+import ConfigSpace.hyperparameters as CSH
+from ytopt.search.optimizer import Optimizer
+from ytopt.search import Search
+from ytopt.search import util
+
 nworkers, is_manager, libE_specs, _ = parse_args()
+num_sim_workers = nworkers - 1 # Subtracting one because one worker will be the generator
 
 sim_specs = {
     'sim_f': sim_f,
     'in': ['BLOCK_SIZE'],
-    'out': [('f', float)],
+    'out': [('RUN_TIME', float)],
 }
+
+
+cs = CS.ConfigurationSpace(seed=1234)
+p0= CSH.UniformIntegerHyperparameter(name='BLOCK_SIZE', lower=1, upper=10, default_value=5)
+cs.add_hyperparameters([p0])
+input_space = cs
+
+ytoptimizer = Optimizer(
+    num_workers=num_sim_workers, 
+    space=input_space,
+    learner='RF', liar_strategy='cl_max', acq_func='gp_hedge')
 
 gen_specs = {
     'gen_f': gen_f,
     'out': [('BLOCK_SIZE', int, (1,))],
-    'persis_in': ['f'],
-    'user': {
-        'gen_batch_size': 5,
-        'lb': np.array([1]),
-        'ub': np.array([10]),
-    },
+    'persis_in': ['RUN_TIME', 'BLOCK_SIZE'],
+    'user': {'ytoptimizer': ytoptimizer,
+             'num_sim_workers': num_sim_workers,
+        },
 }
 
 alloc_specs = {'alloc_f': alloc_f}
@@ -51,6 +67,6 @@ exit_criteria = {'sim_max': 10}
 H, persis_info, flag = libE(sim_specs, gen_specs, exit_criteria, persis_info, alloc_specs, libE_specs=libE_specs)
 
 if is_manager:
-    assert len(H) == exit_criteria['sim_max']
+    assert np.sum(H['returned']) == exit_criteria['sim_max']
     print("\nlibEnsemble has perform the correct number of evaluations")
     save_libE_output(H, persis_info, __file__, nworkers)
