@@ -56,7 +56,7 @@ gen_specs = {
     },
 }
 
-alloc_specs = {'alloc_f': alloc_f}
+alloc_specs = {'alloc_f': alloc_f, 'user': {'async_return': True}}
 
 persis_info = add_unique_random_streams({}, nworkers + 1, seed=1234)
 
