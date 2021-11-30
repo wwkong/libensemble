@@ -47,7 +47,7 @@ def persistent_ytopt(H, persis_info, gen_specs, libE_info):
         print('requesting:', H_o['BLOCK_SIZE'], flush=True)
         # This returns the requested points to the libE manager, which will
         # perform the sim_f evaluations and then give back the values.
-        tag, Work, calc_in = ps.send_recv(H_o)  
+        tag, Work, calc_in = ps.send_recv(H_o)
         print('received:', calc_in, flush=True)
 
     return H_o, persis_info, FINISHED_PERSISTENT_GEN_TAG
